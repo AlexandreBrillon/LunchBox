@@ -1,13 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity } from 'react-native';
-import { Camera, CameraType, useCameraPermissions } from 'expo-camera';
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button } from 'react-native';
 import { useState, useEffect } from 'react';
 import { MaterialIcons } from '@expo/vector-icons'; // Importing icon library
+import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera'; // Camera imports
 
 const PlaceholderImage = require('../assets/images/lunch.png');
 
 export default function App() {
-  const [facing, setFacing] = useState<CameraType>('back');
+  const [facing, setFacing] = useState<CameraType>('back'); // Use CameraType directly
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false); // State to toggle camera visibility
 
@@ -29,18 +29,17 @@ export default function App() {
   };
 
   const toggleCameraFacing = () => {
-    setFacing(current => (current === CameraType.back ? CameraType.front : CameraType.back));
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   return (
     <View style={styles.container}>
-      {!showCamera ? ( // Show main content or camera based on state
+      {!showCamera ? (
         <>
           <View style={styles.imageContainer}>
             <Text style={styles.text}>What's in my lunchbox?</Text>
             <Image source={PlaceholderImage} style={styles.image} />
           </View>
-          {/* Replace Open Camera button with camera icon */}
           <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
             <MaterialIcons name="camera-alt" size={32} color="white" />
           </TouchableOpacity>
@@ -54,12 +53,14 @@ export default function App() {
       ) : (
         <>
           {permission && permission.granted ? (
-            <Camera style={styles.camera} type={facing}>
+            <CameraView style={styles.camera} facing={facing}>
               <View style={styles.buttonContainer}>
-                <Button title="Flip Camera" onPress={toggleCameraFacing} />
+                <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+                  <Text style={styles.text}>Flip Camera</Text>
+                </TouchableOpacity>
                 <Button title="Close Camera" onPress={toggleCameraVisibility} />
               </View>
-            </Camera>
+            </CameraView>
           ) : (
             <View style={styles.permissionContainer}>
               <Text style={styles.message}>We need your permission to show the camera</Text>
@@ -100,8 +101,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     width: '90%',
-    marginTop: 20, // Space above the search bar
-    marginBottom: 160, // Space from the bottom
+    marginTop: 20,
+    marginBottom: 160,
     paddingHorizontal: 10,
     backgroundColor: 'white',
   },
@@ -125,6 +126,13 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   cameraIconButton: {
-    marginBottom: 20, // Space between icon and search bar
+    marginBottom: 20,
+  },
+  button: {
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 5,
+    padding: 10,
   },
 });
