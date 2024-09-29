@@ -5,13 +5,22 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
 import axios from 'axios';
 import { format } from 'react-string-format';
-import React from 'react';
+import * as React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
-const id = '4a1c77c0';
+//const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
+//const id = '4a1c77c0';
 
 // Fetch initial data (consider moving this to a function)
-axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {})
+//axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {})
+//  .then((response) => {
+//    console.log(response.data);
+//  });
+
+const apikey = '2bd8213c46f1427c998639662d0f30b5';
+
+axios.get("https://api.spoonacular.com/recipes/complexSearch?apiKey=2bd8213c46f1427c998639662d0f30b5&cuisine='European'")
   .then((response) => {
     console.log(response.data);
   });
@@ -65,10 +74,31 @@ export default function App() {
 
 
   const [text, setText] = useState('')
+  const Stack = createNativeStackNavigator();
+
+  //function HomeScreen() {
+  //  return (
+  //    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-start' }}>
+  //      <Text>Home Screen</Text>
+  //  </View>
+  //  );
+  //};
+
+
+  //const MyStack = () => {
+  //  return (
+  //    <NavigationContainer>
+  //    <Stack.Navigator>
+  //      <Stack.Screen name="Home" component={HomeScreen} />
+  //    </Stack.Navigator>
+  //  </NavigationContainer>
+  //  );
+  //};
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    //<NavigationContainer>
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -77,9 +107,9 @@ export default function App() {
             <>
               <View style={styles.imageContainer}>
                 <Text style={styles.text}>What's in my lunchbox?</Text>
-                <Image 
-                  source={lunchboxImage} 
-                  style={styles.image} 
+                <Image
+                  source={lunchboxImage}
+                  style={styles.image}
                 />
               </View>
               <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
@@ -92,7 +122,7 @@ export default function App() {
                   setText(text)
                 }}
                 placeholderTextColor="#aaa"
-                onFocus={() => {}}
+                onFocus={() => { }}
               />
               <StatusBar style="auto" />
             </>
@@ -121,6 +151,7 @@ export default function App() {
         </>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
+    //</NavigationContainer>
   );
 }
 
