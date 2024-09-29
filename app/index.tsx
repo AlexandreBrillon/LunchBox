@@ -8,6 +8,8 @@ import axios from 'axios';
 import { format } from 'react-string-format';
 import { TouchableWithoutFeedback } from 'react-native';
 import Constants from 'expo-constants';
+import { ScrollView } from 'react-native';
+
 
 const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
 const id = '4a1c77c0';
@@ -47,6 +49,7 @@ export default function App() {
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
+  
 
   return (
     <View style={styles.container}>
@@ -60,6 +63,15 @@ export default function App() {
                 behavior={'position'}
                 keyboardVerticalOffset={Constants.statusBarHeight}
                 style={styles.searchBarAdjust}>
+                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
+                  <View style={{flex: 1}}>
+                    <TextInput
+                      style={styles.searchBar}
+                      keyboardType='default'
+                      placeholder="Search for recipes..."
+                      placeholderTextColor="#aaa"
+                    />
+                  </View>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 
                   <TextInput
