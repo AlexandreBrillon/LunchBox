@@ -133,8 +133,8 @@ export default function App() {
                 numColumns={3} // Display 3 items per row
                 columnWrapperStyle={styles.row} // Custom style for the row
               />
-              {/* Conditionally render the camera button based on whether recipes are shown */}
-              {recipes.length === 0 && (
+              {/* we will conditionally render the camera button based on whether recipes are shown */}
+              {recipes.length === 0 && ( //if there are no recipes, show the camera button
                 <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
                   <MaterialIcons name="camera-alt" size={32} color="white" />
                 </TouchableOpacity>
