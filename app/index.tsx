@@ -1,18 +1,35 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button } from 'react-native';
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, FlatList } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
+import axios from 'axios';
+import { format } from 'react-string-format';
+import * as MediaLibrary from 'expo-media-library';
 
-// Now you can use the 'b' function or 'resetBamlEnvVars' in your code
-
+const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
+const id = '4a1c77c0';
 
 const lunchboxImage = require('../assets/images/lunch.png'); // Default lunchbox image
+
+interface Recipe {
+  label: string;
+  image: string;
+  uri: string;
+}
+
+interface RecipeResponse {
+  hits: {
+    recipe: Recipe;
+  }[];
+}
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false); // Controls visibility of the camera
+  const [searchQuery, setSearchQuery] = useState(''); // State for the search query
+  const [recipes, setRecipes] = useState<{ recipe: Recipe }[]>([]); // State to hold the recipes
   const cameraRef = useRef<CameraView | null>(null); // Reference for the camera
 
   useEffect(() => {
@@ -47,57 +64,101 @@ export default function App() {
       const photo = await cameraRef.current.takePictureAsync(options);
 
       if (photo && photo.uri) {
-        console.log(photo.uri); // Log the photo URI, or handle it as needed (e.g., save to storage)
-        // Here you can save or process the photo, but it won't display in the UI
+        console.log(photo.uri); // Log the photo URI, or handle it as needed
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+            await MediaLibrary.createAssetAsync(photo.uri);
+            alert('Meal saved to gallery!');
+        } else {
+            alert('Permission to access gallery is required!');
+        }
+
         setShowCamera(false); // Hide the camera after taking the picture
-      }
+    }
+    }
+  };
+
+  // Function to fetch recipes based on the user's input
+  const fetchRecipes = async () => {
+    if (searchQuery.trim() === '') return; // Prevent fetching if the search query is empty
+
+    try {
+      const response = await axios.get<RecipeResponse>(
+        format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}&q={2}", id, api_key, searchQuery)
+      );
+      console.log("API Response:", response.data);
+      setRecipes(response.data.hits); // Store hits directly
+    } catch (error) {
+      console.error("Error fetching recipes:", error);
     }
   };
 
   return (
-    <View style={styles.container}>
-      {!showCamera ? (
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <>
-          <View style={styles.imageContainer}>
-            <Text style={styles.text}>What's in my lunchbox?</Text>
-            <Image 
-              source={lunchboxImage} 
-              style={styles.image} 
-            />
-          </View>
-          <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
-            <MaterialIcons name="camera-alt" size={32} color="white" />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search for recipes..."
-            placeholderTextColor="#aaa"
-          />
-          <StatusBar style="auto" />
-        </>
-      ) : (
-        <>
-          {permission && permission.granted ? (
-            <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-              <View style={styles.topRightButtonContainer}>
-                <Button title="Close Camera" onPress={toggleCameraVisibility} />
+          {!showCamera ? (
+            <>
+              <View style={styles.imageContainer}>
+                <Text style={styles.text}>What's in your lunchbox today?</Text>
+                <Image 
+                  source={lunchboxImage} 
+                  style={styles.image} 
+                />
               </View>
-              <View style={styles.bottomButtonsContainer}>
-                <TouchableOpacity style={styles.flipCameraButton} onPress={toggleCameraFacing}>
-                  <Text>Flip Camera</Text>
-                </TouchableOpacity>
-                <Button title="Take Picture" onPress={takePicture} />
-              </View>
-            </CameraView>
+              {/* Search Bar at the top */}
+              <TextInput
+                style={styles.searchBar}
+                placeholder="Search for recipes..."
+                placeholderTextColor="#aaa"
+                value={searchQuery} // Set the current value of the input
+                onChangeText={setSearchQuery} // Update the search query state
+                onSubmitEditing={fetchRecipes} // Fetch recipes when user submits the search
+              />
+              {/* FlatList to display fetched recipes */}
+              <FlatList
+                data={recipes}
+                keyExtractor={(item) => item.recipe.uri}
+                renderItem={({ item }) => (
+                  <View style={styles.recipeItem}>
+                    <Text style={styles.recipeTitle}>{item.recipe.label}</Text>
+                    <Image source={{ uri: item.recipe.image }} style={styles.recipeImage} />
+                  </View>
+                )}
+              />
+              <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
+                <MaterialIcons name="camera-alt" size={32} color="white" />
+              </TouchableOpacity>
+              <StatusBar style="auto" />
+            </>
           ) : (
-            <View style={styles.permissionContainer}>
-              <Text style={styles.message}>We need your permission to show the camera</Text>
-              <Button onPress={requestPermission} title="Grant Permission" />
-            </View>
+            <>
+              {permission && permission.granted ? (
+                <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+                  <View style={styles.topRightButtonContainer}>
+                    <Button title="Close Camera" onPress={toggleCameraVisibility} />
+                  </View>
+                  <View style={styles.bottomButtonsContainer}>
+                    <TouchableOpacity style={styles.flipCameraButton} onPress={toggleCameraFacing}>
+                      <Text>Flip Camera</Text>
+                    </TouchableOpacity>
+                    <Button title="Take Picture" onPress={takePicture} />
+                  </View>
+                </CameraView>
+              ) : (
+                <View style={styles.permissionContainer}>
+                  <Text style={styles.message}>We need your permission to show the camera</Text>
+                  <Button onPress={requestPermission} title="Grant Permission" />
+                </View>
+              )}
+            </>
           )}
         </>
-      )}
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -109,12 +170,13 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     flex: 1,
-    paddingTop: 70,
+    paddingTop: 20, // Adjust padding to move it up
   },
   image: {
     width: 320,
     height: 440,
     borderRadius: 18,
+    alignSelf: 'center',
   },
   text: {
     marginTop: 40,
@@ -124,15 +186,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   searchBar: {
-    height: 70,
+    height: 50,
     borderColor: 'gray',
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 5,
     width: '90%',
-    marginTop: 20,
-    marginBottom: 160,
+    marginTop: 300,
     paddingHorizontal: 10,
     backgroundColor: 'white',
+    alignSelf: 'center', // Center the search bar horizontally
   },
   camera: {
     flex: 1,
@@ -163,15 +225,35 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   cameraIconButton: {
-    marginBottom: 0,
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center', // Center children horizontally
   },
+  
+  
   flipCameraButton: {
-    width: 120, // Adjust size as needed
-    height: 60, // Adjust size as needed
+    width: 120,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 5,
-    padding: 5, // Reduced padding
+    padding: 5,
+  },
+  recipeItem: {
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  recipeTitle: {
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  recipeImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginTop: 5,
   },
 });
