@@ -10,6 +10,7 @@ import { TouchableWithoutFeedback } from 'react-native';
 import Constants from 'expo-constants';
 import { ScrollView } from 'react-native';
 
+
 const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
 const id = '4a1c77c0';
 
@@ -71,7 +72,13 @@ export default function App() {
                       placeholderTextColor="#aaa"
                     />
                   </View>
-                  
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+
+                  <TextInput
+                    style={styles.searchBar}
+                    placeholder="Search for recipes..."
+                    placeholderTextColor="#aaa"
+                  />
                 </TouchableWithoutFeedback>
               </KeyboardAvoidingView>
             </View>
