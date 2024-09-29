@@ -1,44 +1,35 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, FlatList } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
 import axios from 'axios';
 import { format } from 'react-string-format';
-import * as React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as MediaLibrary from 'expo-media-library';
 
-
-//const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
-//const id = '4a1c77c0';
-
-// Fetch initial data (consider moving this to a function)
-//axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {})
-//  .then((response) => {
-//    console.log(response.data);
-//  });
-
-const apikey = '2bd8213c46f1427c998639662d0f30b5';
-
-axios.get("https://api.spoonacular.com/recipes/complexSearch?apiKey=2bd8213c46f1427c998639662d0f30b5&cuisine='European'")
-  .then((response) => {
-    console.log(response.data);
-  });
+const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
+const id = '4a1c77c0';
 
 const lunchboxImage = require('../assets/images/lunch.png'); // Default lunchbox image
 
-axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {})
-  .then((response) => {
-    console.log(response.data);
-  });
+interface Recipe {
+  label: string;
+  image: string;
+  uri: string;
+}
 
-const lunchboxImage = require('../assets/images/lunch.png'); // Default lunchbox image
+interface RecipeResponse {
+  hits: {
+    recipe: Recipe;
+  }[];
+}
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false); // Controls visibility of the camera
+  const [searchQuery, setSearchQuery] = useState(''); // State for the search query
+  const [recipes, setRecipes] = useState<{ recipe: Recipe }[]>([]); // State to hold the recipes
   const cameraRef = useRef<CameraView | null>(null); // Reference for the camera
 
   useEffect(() => {
@@ -74,53 +65,31 @@ export default function App() {
 
       if (photo && photo.uri) {
         console.log(photo.uri); // Log the photo URI, or handle it as needed
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+            await MediaLibrary.createAssetAsync(photo.uri);
+            alert('Meal saved to gallery!');
+        } else {
+            alert('Permission to access gallery is required!');
+        }
+
         setShowCamera(false); // Hide the camera after taking the picture
-      }
+    }
     }
   };
 
+  // Function to fetch recipes based on the user's input
+  const fetchRecipes = async () => {
+    if (searchQuery.trim() === '') return; // Prevent fetching if the search query is empty
 
-  const [text, setText] = useState('')
-  const Stack = createNativeStackNavigator();
-
-  //function HomeScreen() {
-  //  return (
-  //    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-start' }}>
-  //      <Text>Home Screen</Text>
-  //  </View>
-  //  );
-  //};
-
-
-  //const MyStack = () => {
-  //  return (
-  //    <NavigationContainer>
-  //    <Stack.Navigator>
-  //      <Stack.Screen name="Home" component={HomeScreen} />
-  //    </Stack.Navigator>
-  //  </NavigationContainer>
-  //  );
-  //};
-
-  return (
-    //<NavigationContainer>
-    <KeyboardAvoidingView
-      style={styles.container}
-
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      const options = {
-        quality: 0.5, // Quality of the image
-        base64: true, // Get base64 string
-        skipProcessing: false, // Skip processing
-      };
-
-      const photo = await cameraRef.current.takePictureAsync(options);
-
-      if (photo && photo.uri) {
-        console.log(photo.uri); // Log the photo URI, or handle it as needed
-        setShowCamera(false); // Hide the camera after taking the picture
-      }
+    try {
+      const response = await axios.get<RecipeResponse>(
+        format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}&q={2}", id, api_key, searchQuery)
+      );
+      console.log("API Response:", response.data);
+      setRecipes(response.data.hits); // Store hits directly
+    } catch (error) {
+      console.error("Error fetching recipes:", error);
     }
   };
 
@@ -134,29 +103,35 @@ export default function App() {
           {!showCamera ? (
             <>
               <View style={styles.imageContainer}>
-                <Text style={styles.text}>What's in my lunchbox?</Text>
-                <Image
-                  source={lunchboxImage}
-                  style={styles.image}
+                <Text style={styles.text}>What's in your lunchbox today?</Text>
                 <Image 
                   source={lunchboxImage} 
                   style={styles.image} 
                 />
               </View>
-              <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
-                <MaterialIcons name="camera-alt" size={32} color="white" />
-              </TouchableOpacity>
+              {/* Search Bar at the top */}
               <TextInput
                 style={styles.searchBar}
                 placeholder="Search for recipes..."
-                onChangeText={(text) => {
-                  setText(text)
-                }}
                 placeholderTextColor="#aaa"
-                onFocus={() => { }}
-                placeholderTextColor="#aaa"
-                onFocus={() => {}}
+                value={searchQuery} // Set the current value of the input
+                onChangeText={setSearchQuery} // Update the search query state
+                onSubmitEditing={fetchRecipes} // Fetch recipes when user submits the search
               />
+              {/* FlatList to display fetched recipes */}
+              <FlatList
+                data={recipes}
+                keyExtractor={(item) => item.recipe.uri}
+                renderItem={({ item }) => (
+                  <View style={styles.recipeItem}>
+                    <Text style={styles.recipeTitle}>{item.recipe.label}</Text>
+                    <Image source={{ uri: item.recipe.image }} style={styles.recipeImage} />
+                  </View>
+                )}
+              />
+              <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
+                <MaterialIcons name="camera-alt" size={32} color="white" />
+              </TouchableOpacity>
               <StatusBar style="auto" />
             </>
           ) : (
@@ -184,7 +159,6 @@ export default function App() {
         </>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
-    //</NavigationContainer>
   );
 }
 
@@ -196,12 +170,12 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     flex: 1,
-    paddingTop: 70,
+    paddingTop: 20, // Adjust padding to move it up
   },
   image: {
     width: 320,
     height: 440,
-    borderRadius: 18,
+    alignSelf: 'center',
   },
   text: {
     marginTop: 40,
@@ -210,20 +184,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  textTest: {
-    color: 'black',
-    height: 200,
-  },
   searchBar: {
-    height: 70,
+    height: 50,
     borderColor: 'gray',
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 5,
     width: '90%',
-    marginTop: 20,
-    marginBottom: 160, // Space to avoid overlap with camera buttons
+    marginTop: 300,
     paddingHorizontal: 10,
     backgroundColor: 'white',
+    alignSelf: 'center', // Center the search bar horizontally
   },
   camera: {
     flex: 1,
@@ -254,8 +224,14 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   cameraIconButton: {
-    marginBottom: 0,
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center', // Center children horizontally
   },
+  
+  
   flipCameraButton: {
     width: 120,
     height: 60,
@@ -264,5 +240,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 5,
     padding: 5,
+  },
+  recipeItem: {
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  recipeTitle: {
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  recipeImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginTop: 5,
   },
 });
