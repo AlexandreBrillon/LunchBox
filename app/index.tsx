@@ -1,32 +1,24 @@
+
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button } from 'react-native';
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { useState, useEffect } from 'react';
 import { MaterialIcons } from '@expo/vector-icons'; // Importing icon library
 import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera'; // Camera imports
 import axios from 'axios';
+import { format } from 'react-string-format';
+import { TouchableWithoutFeedback } from 'react-native';
+import Constants from 'expo-constants';
+import { ScrollView } from 'react-native';
 
-const baseUrl = 'https://api.edamam.com';
+const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
+const id = '4a1c77c0';
 
-// axios.get('https://api.edamam.com/api/recipes/v2?type=public&q=beef%2C%20broccoli%2C%20ginger%2C%20onion&app_id=4a1c77c0&app_key=ee005e4f5ba45324c68ca32635e02f32')
-//   .then(response => {
-//     console.log(response.data);
-//   })
-//   .catch(error => {
-//     console.error("Error fetching data: ", error);
-//   });
 
-axios({
-    method: 'get',
-    url: `${baseUrl}/api/recipes/v2`,
-  }).then((response) => {
-    console.log(response.data);
-  });
+axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {
+}).then((response) => {
+  console.log(response.data);
+});
 
-axios.get(`${baseUrl}/api/recipes/v2`, {
-     
-  }).then((response) => {
-    console.log(response.data);
-  });
 
 
 const PlaceholderImage = require('../assets/images/lunch.png');
@@ -56,6 +48,7 @@ export default function App() {
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
+  
 
   return (
     <View style={styles.container}>
@@ -64,15 +57,30 @@ export default function App() {
           <View style={styles.imageContainer}>
             <Text style={styles.text}>What's in my lunchbox?</Text>
             <Image source={PlaceholderImage} style={styles.image} />
+            <View>
+              <KeyboardAvoidingView
+                behavior={'position'}
+                keyboardVerticalOffset={Constants.statusBarHeight}
+                style={styles.searchBarAdjust}>
+                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
+                  <View style={{flex: 1}}>
+                    <TextInput
+                      style={styles.searchBar}
+                      keyboardType='default'
+                      placeholder="Search for recipes..."
+                      placeholderTextColor="#aaa"
+                    />
+                  </View>
+                  
+                </TouchableWithoutFeedback>
+              </KeyboardAvoidingView>
+            </View>
           </View>
+
           <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
             <MaterialIcons name="camera-alt" size={32} color="white" />
           </TouchableOpacity>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search for recipes..."
-            placeholderTextColor="#aaa" 
-          />
+
           <StatusBar style="auto" />
         </>
       ) : (
@@ -130,6 +138,9 @@ const styles = StyleSheet.create({
     marginBottom: 160,
     paddingHorizontal: 10,
     backgroundColor: 'white',
+  },
+  searchBarAdjust: {
+    flex: 1,
   },
   camera: {
     flex: 1,
