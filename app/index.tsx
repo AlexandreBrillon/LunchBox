@@ -1,33 +1,27 @@
-
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Keyboard } from 'react-native';
-import { useState, useEffect } from 'react';
-import { MaterialIcons } from '@expo/vector-icons'; // Importing icon library
-import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera'; // Camera imports
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
 import axios from 'axios';
 import { format } from 'react-string-format';
-import { TouchableWithoutFeedback } from 'react-native';
-import Constants from 'expo-constants';
-import { ScrollView } from 'react-native';
-
 
 const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
 const id = '4a1c77c0';
 
+// Fetch initial data (consider moving this to a function)
+axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {})
+  .then((response) => {
+    console.log(response.data);
+  });
 
-axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&app_key={1}", id, api_key), {
-}).then((response) => {
-  console.log(response.data);
-});
-
-
-
-const PlaceholderImage = require('../assets/images/lunch.png');
+const lunchboxImage = require('../assets/images/lunch.png'); // Default lunchbox image
 
 export default function App() {
-  const [facing, setFacing] = useState<CameraType>('back'); // Use CameraType directly
+  const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
-  const [showCamera, setShowCamera] = useState(false); // State to toggle camera visibility
+  const [showCamera, setShowCamera] = useState(false); // Controls visibility of the camera
+  const cameraRef = useRef<CameraView | null>(null); // Reference for the camera
 
   useEffect(() => {
     const askForPermissions = async () => {
@@ -49,67 +43,76 @@ export default function App() {
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
-  
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      const options = {
+        quality: 0.5, // Quality of the image
+        base64: true, // Get base64 string
+        skipProcessing: false, // Skip processing
+      };
+
+      const photo = await cameraRef.current.takePictureAsync(options);
+
+      if (photo && photo.uri) {
+        console.log(photo.uri); // Log the photo URI, or handle it as needed
+        setShowCamera(false); // Hide the camera after taking the picture
+      }
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      {!showCamera ? (
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <>
-          <View style={styles.imageContainer}>
-            <Text style={styles.text}>What's in my lunchbox?</Text>
-            <Image source={PlaceholderImage} style={styles.image} />
-            <View>
-              <KeyboardAvoidingView
-                behavior={'position'}
-                keyboardVerticalOffset={Constants.statusBarHeight}
-                style={styles.searchBarAdjust}>
-                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
-                  <View style={{flex: 1}}>
-                    <TextInput
-                      style={styles.searchBar}
-                      keyboardType='default'
-                      placeholder="Search for recipes..."
-                      placeholderTextColor="#aaa"
-                    />
-                  </View>
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-
-                  <TextInput
-                    style={styles.searchBar}
-                    placeholder="Search for recipes..."
-                    placeholderTextColor="#aaa"
-                  />
-                </TouchableWithoutFeedback>
-              </KeyboardAvoidingView>
-            </View>
-          </View>
-
-          <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
-            <MaterialIcons name="camera-alt" size={32} color="white" />
-          </TouchableOpacity>
-
-          <StatusBar style="auto" />
-        </>
-      ) : (
-        <>
-          {permission && permission.granted ? (
-            <CameraView style={styles.camera} facing={facing}>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-                  <Text style={styles.text}>Flip Camera</Text>
-                </TouchableOpacity>
-                <Button title="Close Camera" onPress={toggleCameraVisibility} />
+          {!showCamera ? (
+            <>
+              <View style={styles.imageContainer}>
+                <Text style={styles.text}>What's in my lunchbox?</Text>
+                <Image 
+                  source={lunchboxImage} 
+                  style={styles.image} 
+                />
               </View>
-            </CameraView>
+              <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
+                <MaterialIcons name="camera-alt" size={32} color="white" />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.searchBar}
+                placeholder="Search for recipes..."
+                placeholderTextColor="#aaa"
+                onFocus={() => {}}
+              />
+              <StatusBar style="auto" />
+            </>
           ) : (
-            <View style={styles.permissionContainer}>
-              <Text style={styles.message}>We need your permission to show the camera</Text>
-              <Button onPress={requestPermission} title="Grant Permission" />
-            </View>
+            <>
+              {permission && permission.granted ? (
+                <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+                  <View style={styles.topRightButtonContainer}>
+                    <Button title="Close Camera" onPress={toggleCameraVisibility} />
+                  </View>
+                  <View style={styles.bottomButtonsContainer}>
+                    <TouchableOpacity style={styles.flipCameraButton} onPress={toggleCameraFacing}>
+                      <Text>Flip Camera</Text>
+                    </TouchableOpacity>
+                    <Button title="Take Picture" onPress={takePicture} />
+                  </View>
+                </CameraView>
+              ) : (
+                <View style={styles.permissionContainer}>
+                  <Text style={styles.message}>We need your permission to show the camera</Text>
+                  <Button onPress={requestPermission} title="Grant Permission" />
+                </View>
+              )}
+            </>
           )}
         </>
-      )}
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -142,21 +145,27 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: '90%',
     marginTop: 20,
-    marginBottom: 160,
+    marginBottom: 160, // Space to avoid overlap with camera buttons
     paddingHorizontal: 10,
     backgroundColor: 'white',
-  },
-  searchBarAdjust: {
-    flex: 1,
   },
   camera: {
     flex: 1,
     width: '100%',
   },
-  buttonContainer: {
+  topRightButtonContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+  },
+  bottomButtonsContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    margin: 20,
+    paddingHorizontal: 20,
   },
   permissionContainer: {
     flex: 1,
@@ -169,13 +178,15 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   cameraIconButton: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
-  button: {
-    alignSelf: 'flex-end',
+  flipCameraButton: {
+    width: 120,
+    height: 60,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 5,
-    padding: 10,
+    padding: 5,
   },
 });
