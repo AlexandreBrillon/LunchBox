@@ -1,15 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button } from 'react-native';
-import { useState, useEffect } from 'react';
-import { MaterialIcons } from '@expo/vector-icons'; // Importing icon library
-import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera'; // Camera imports
+import { useState, useEffect, useRef } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
 
-const PlaceholderImage = require('../assets/images/lunch.png');
+// Now you can use the 'b' function or 'resetBamlEnvVars' in your code
+
+
+const lunchboxImage = require('../assets/images/lunch.png'); // Default lunchbox image
 
 export default function App() {
-  const [facing, setFacing] = useState<CameraType>('back'); // Use CameraType directly
+  const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
-  const [showCamera, setShowCamera] = useState(false); // State to toggle camera visibility
+  const [showCamera, setShowCamera] = useState(false); // Controls visibility of the camera
+  const cameraRef = useRef<CameraView | null>(null); // Reference for the camera
 
   useEffect(() => {
     const askForPermissions = async () => {
@@ -32,13 +36,34 @@ export default function App() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      const options = {
+        quality: 0.5, // Quality of the image
+        base64: true, // Get base64 string
+        skipProcessing: false, // Skip processing
+      };
+
+      const photo = await cameraRef.current.takePictureAsync(options);
+
+      if (photo && photo.uri) {
+        console.log(photo.uri); // Log the photo URI, or handle it as needed (e.g., save to storage)
+        // Here you can save or process the photo, but it won't display in the UI
+        setShowCamera(false); // Hide the camera after taking the picture
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
       {!showCamera ? (
         <>
           <View style={styles.imageContainer}>
             <Text style={styles.text}>What's in my lunchbox?</Text>
-            <Image source={PlaceholderImage} style={styles.image} />
+            <Image 
+              source={lunchboxImage} 
+              style={styles.image} 
+            />
           </View>
           <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
             <MaterialIcons name="camera-alt" size={32} color="white" />
@@ -46,19 +71,22 @@ export default function App() {
           <TextInput
             style={styles.searchBar}
             placeholder="Search for recipes..."
-            placeholderTextColor="#aaa" 
+            placeholderTextColor="#aaa"
           />
           <StatusBar style="auto" />
         </>
       ) : (
         <>
           {permission && permission.granted ? (
-            <CameraView style={styles.camera} facing={facing}>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-                  <Text style={styles.text}>Flip Camera</Text>
-                </TouchableOpacity>
+            <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+              <View style={styles.topRightButtonContainer}>
                 <Button title="Close Camera" onPress={toggleCameraVisibility} />
+              </View>
+              <View style={styles.bottomButtonsContainer}>
+                <TouchableOpacity style={styles.flipCameraButton} onPress={toggleCameraFacing}>
+                  <Text>Flip Camera</Text>
+                </TouchableOpacity>
+                <Button title="Take Picture" onPress={takePicture} />
               </View>
             </CameraView>
           ) : (
@@ -110,10 +138,19 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  buttonContainer: {
+  topRightButtonContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+  },
+  bottomButtonsContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    margin: 20,
+    paddingHorizontal: 20,
   },
   permissionContainer: {
     flex: 1,
@@ -126,13 +163,15 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   cameraIconButton: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
-  button: {
-    alignSelf: 'flex-end',
+  flipCameraButton: {
+    width: 120, // Adjust size as needed
+    height: 60, // Adjust size as needed
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 5,
-    padding: 10,
+    padding: 5, // Reduced padding
   },
 });
