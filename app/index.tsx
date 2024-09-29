@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, FlatList } from 'react-native';
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, FlatList, Dimensions } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera';
@@ -23,6 +23,8 @@ interface RecipeResponse {
     recipe: Recipe;
   }[];
 }
+
+const screenWidth = Dimensions.get('window').width;
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
@@ -67,14 +69,14 @@ export default function App() {
         console.log(photo.uri); // Log the photo URI, or handle it as needed
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status === 'granted') {
-            await MediaLibrary.createAssetAsync(photo.uri);
-            alert('Meal saved to gallery!');
+          await MediaLibrary.createAssetAsync(photo.uri);
+          alert('Meal saved to gallery!');
         } else {
-            alert('Permission to access gallery is required!');
+          alert('Permission to access gallery is required!');
         }
 
         setShowCamera(false); // Hide the camera after taking the picture
-    }
+      }
     }
   };
 
@@ -124,14 +126,19 @@ export default function App() {
                 keyExtractor={(item) => item.recipe.uri}
                 renderItem={({ item }) => (
                   <View style={styles.recipeItem}>
-                    <Text style={styles.recipeTitle}>{item.recipe.label}</Text>
                     <Image source={{ uri: item.recipe.image }} style={styles.recipeImage} />
+                    <Text style={styles.recipeTitle}>{item.recipe.label}</Text>
                   </View>
                 )}
+                numColumns={3} // Display 3 items per row
+                columnWrapperStyle={styles.row} // Custom style for the row
               />
-              <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
-                <MaterialIcons name="camera-alt" size={32} color="white" />
-              </TouchableOpacity>
+              {/* Conditionally render the camera button based on whether recipes are shown */}
+              {recipes.length === 0 && (
+                <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
+                  <MaterialIcons name="camera-alt" size={32} color="white" />
+                </TouchableOpacity>
+              )}
               <StatusBar style="auto" />
             </>
           ) : (
@@ -231,8 +238,6 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center', // Center children horizontally
   },
-  
-  
   flipCameraButton: {
     width: 120,
     height: 60,
@@ -242,18 +247,26 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 5,
   },
-  recipeItem: {
-    marginVertical: 10,
-    alignItems: 'center',
+  row: {
+    flexDirection: 'row', // Display the items in a row
+    justifyContent: 'space-between', // Space out the items evenly
+    marginBottom: 10,
   },
-  recipeTitle: {
-    fontWeight: 'bold',
-    color: 'white',
+  recipeItem: {
+    width: screenWidth / 3 - 20, // 3 items per row, accounting for padding
+    marginHorizontal: 5,
+    marginBottom: 10,
+    alignItems: 'center', // Center text and image in each item
   },
   recipeImage: {
     width: 100,
     height: 100,
     borderRadius: 10,
+  },
+  recipeTitle: {
     marginTop: 5,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
   },
 });
