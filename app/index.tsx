@@ -7,6 +7,7 @@ import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camer
 import axios from 'axios';
 import { format } from 'react-string-format';
 import { TouchableWithoutFeedback } from 'react-native';
+import Constants from 'expo-constants';
 
 const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
 const id = '4a1c77c0';
@@ -55,19 +56,20 @@ export default function App() {
             <Text style={styles.text}>What's in my lunchbox?</Text>
             <Image source={PlaceholderImage} style={styles.image} />
             <View>
-            <KeyboardAvoidingView
-              behavior={'padding'}
-              style={styles.container}>
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                
+              <KeyboardAvoidingView
+                behavior={'position'}
+                keyboardVerticalOffset={Constants.statusBarHeight}
+                style={styles.searchBarAdjust}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+
                   <TextInput
                     style={styles.searchBar}
                     placeholder="Search for recipes..."
                     placeholderTextColor="#aaa"
                   />
-              </TouchableWithoutFeedback>
+                </TouchableWithoutFeedback>
               </KeyboardAvoidingView>
-              </View>
+            </View>
           </View>
 
           <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
@@ -131,6 +133,9 @@ const styles = StyleSheet.create({
     marginBottom: 160,
     paddingHorizontal: 10,
     backgroundColor: 'white',
+  },
+  searchBarAdjust: {
+    flex: 1,
   },
   camera: {
     flex: 1,
