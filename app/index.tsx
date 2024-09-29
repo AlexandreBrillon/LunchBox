@@ -1,11 +1,12 @@
 
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button } from 'react-native';
+import { StyleSheet, View, Image, Text, TextInput, TouchableOpacity, Button, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { useState, useEffect } from 'react';
 import { MaterialIcons } from '@expo/vector-icons'; // Importing icon library
 import { Camera, CameraType, useCameraPermissions, CameraView } from 'expo-camera'; // Camera imports
 import axios from 'axios';
 import { format } from 'react-string-format';
+import { TouchableWithoutFeedback } from 'react-native';
 
 const api_key = 'ee005e4f5ba45324c68ca32635e02f32';
 const id = '4a1c77c0';
@@ -15,6 +16,7 @@ axios.get(format("https://api.edamam.com/api/recipes/v2?type=public&app_id={0}&a
 }).then((response) => {
   console.log(response.data);
 });
+
 
 
 const PlaceholderImage = require('../assets/images/lunch.png');
@@ -52,15 +54,26 @@ export default function App() {
           <View style={styles.imageContainer}>
             <Text style={styles.text}>What's in my lunchbox?</Text>
             <Image source={PlaceholderImage} style={styles.image} />
+            <View>
+            <KeyboardAvoidingView
+              behavior={'padding'}
+              style={styles.container}>
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                
+                  <TextInput
+                    style={styles.searchBar}
+                    placeholder="Search for recipes..."
+                    placeholderTextColor="#aaa"
+                  />
+              </TouchableWithoutFeedback>
+              </KeyboardAvoidingView>
+              </View>
           </View>
+
           <TouchableOpacity onPress={toggleCameraVisibility} style={styles.cameraIconButton}>
             <MaterialIcons name="camera-alt" size={32} color="white" />
           </TouchableOpacity>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search for recipes..."
-            placeholderTextColor="#aaa"
-          />
+
           <StatusBar style="auto" />
         </>
       ) : (
