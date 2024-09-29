@@ -1,4 +1,4 @@
-# Welcome to our Expo app 👋
+no# Welcome to our Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
@@ -26,7 +26,6 @@ In the output, you'll find options to open the app in a
 ### Running the file
 
 There may be some imports that need to be installed
-to install 
 ```bash
     npx expo install <importName>
    ```
