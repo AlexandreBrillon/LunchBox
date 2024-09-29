@@ -9,12 +9,16 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "baml-server": "baml-cli dev --preview",
+    "baml-generate": "baml-cli generate",
+    "build": "npm run baml-generate && tsc --build"
   },
   "jest": {
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@boundaryml/baml": "^0.57.0",
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/native": "^6.0.2",
     "axios": "^1.7.7",
@@ -24,6 +28,7 @@
     "expo-font": "~12.0.9",
     "expo-linking": "~6.3.1",
     "expo-router": "~3.5.23",
+    "expo-secure-store": "~13.0.2",
     "expo-splash-screen": "~0.27.5",
     "expo-status-bar": "~1.12.1",
     "expo-system-ui": "~3.0.7",
